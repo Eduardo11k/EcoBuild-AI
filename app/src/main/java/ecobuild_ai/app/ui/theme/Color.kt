@@ -2,10 +2,20 @@ package ecobuild_ai.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// EcoBuild brand colors
+val EcoGreen = Color(0xFF2E7D32)
+val EcoGreenLight = Color(0xFF4CAF50)
+val EcoGreenDark = Color(0xFF1B5E20)
+val EcoGreenSurface = Color(0xFFE8F5E9)
+val EcoGreenIcon = Color(0xFFD0EED3)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val TextPrimary = Color(0xFF1C1C1E)
+val TextSecondary = Color(0xFF6B7280)
+val TextHint = Color(0xFFADB5BD)
+val TextHighlight = Color(0xFF2E7D32)
+
+val SurfaceWhite = Color(0xFFFFFFFF)
+val SurfaceCard = Color(0xFFF9FAFB)
+val BorderLight = Color(0xFFE5E7EB)
+
+val DividerColor = Color(0xFFE5E7EB)

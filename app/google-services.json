@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "422382578180",
+    "project_id": "ecobuild-ai",
+    "storage_bucket": "ecobuild-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:422382578180:android:036b88a1a6cfb1b27fe351",
+        "android_client_info": {
+          "package_name": "ecobuild_ai.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQxqbLSyL2YTUy9Y7PtEerEmwcijzmOiE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

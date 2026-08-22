@@ -1,3 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">EcoBuild-AI</string>
+
+    <!-- Login Screen -->
+    <string name="login_welcome_title">Welcome!</string>
+    <string name="login_welcome_subtitle">Log in to keep building sustainable solutions.</string>
+    <string name="login_email_label">Email</string>
+    <string name="login_email_placeholder">your@email.com</string>
+    <string name="login_password_label">Password</string>
+    <string name="login_password_placeholder">Enter your password</string>
+    <string name="login_forgot_password">Forgot your password?</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_or_continue">Or continue with</string>
+    <string name="login_google_button">Continue with Google</string>
+    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_create_account">Create account</string>
+
+    <!-- Google Sign-In Web Client ID (Configuração Firebase Console -> Authentication -> Sign-in method -> Google) -->
+    <string name="default_web_client_id">422382578180-rh8j758rkn2t4d2qt56ic8rm3l3go8tj.apps.googleusercontent.com</string>
+
+    <!-- App Brand -->
+    <string name="brand_eco">Eco</string>
+    <string name="brand_build">Build</string>
+    <string name="brand_tagline">Building today\na </string>
+    <string name="brand_tagline_highlight">sustainable tomorrow.</string>
 </resources>
