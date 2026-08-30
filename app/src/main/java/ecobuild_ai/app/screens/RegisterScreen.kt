@@ -10,6 +10,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,27 +24,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.navigation.NavController
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import ecobuild_ai.app.R
 import ecobuild_ai.app.constant.Routes
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.CoroutineScope
+import com.google.firebase.auth.GoogleAuthProvider
+import ecobuild_ai.app.model.User
+import ecobuild_ai.app.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-fun validarSenha(senha: String): String? {
+fun validarPassword(senha: String): String? {
     return when {
         senha.length < 7 -> "Mínimo de 7 caracteres"
-        senha.length > 10 -> "Máximo de 10 caracteres"
         !senha.any { it.isDigit() } -> "Deve conter pelo menos 1 número"
         !senha.any { !it.isLetterOrDigit() } -> "Deve conter 1 caractere especial"
         else -> null
@@ -47,12 +62,37 @@ fun validarSenha(senha: String): String? {
 
 @Composable
 fun RegisterScreen(navController: NavController) {
-    val auth = FirebaseAuth.getInstance()
+    val auth = remember { FirebaseAuth.getInstance() }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val credentialManager = remember { CredentialManager.create(context) }
     val colorScheme = MaterialTheme.colorScheme
+
+    val defaultWebClientId = stringResource(R.string.default_web_client_id).trim()
+    val webClientId = if (GOOGLE_WEB_CLIENT_ID.isNotBlank()) {
+        GOOGLE_WEB_CLIENT_ID.trim()
+    } else {
+        defaultWebClientId
+    }
+
+    var fullName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    var isLoading by remember { mutableStateOf(false) }
+    var isGoogleLoading by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Image(
-            painter = painterResource(R.drawable.ic_resgister_image),
+            painter = painterResource(R.drawable.register_img),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
@@ -65,20 +105,8 @@ fun RegisterScreen(navController: NavController) {
         ) {
             Image(
                 painter = painterResource(R.drawable.logoapp_img),
-                contentDescription = "Logo Kudia",
-                modifier = Modifier.size(100.dp),
-                contentScale = ContentScale.Inside
-            )
-            Text(
-                text = "KUDIA",
-                color = Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Sabores de Angola 🇦🇴",
-                color = Color.LightGray,
-                fontSize = 16.sp
+                contentDescription = "Logo EcoBuild-AI",
+                modifier = Modifier.size(200.dp)
             )
         }
 
@@ -101,10 +129,10 @@ fun RegisterScreen(navController: NavController) {
                 Text(
                     text = buildAnnotatedString {
                         withStyle(style = SpanStyle(color = colorScheme.onSurface, fontWeight = FontWeight.Bold)) {
-                            append("Criar Conta\n")
+                            append("Create Account\n")
                         }
                         withStyle(style = SpanStyle(color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.Normal)) {
-                            append("Junte-se à comunidade Kudia")
+                            append("Together for sustainable projects")
                         }
                     },
                     fontSize = 28.sp,
@@ -114,29 +142,16 @@ fun RegisterScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                var fullName by remember { mutableStateOf("") }
-                var email by remember { mutableStateOf("") }
-                var emailError by remember { mutableStateOf<String?>(null) }
-                var password by remember { mutableStateOf("") }
-                var confirmPassword by remember { mutableStateOf("") }
-
-                var passwordError by remember { mutableStateOf<String?>(null) }
-                var confirmPasswordError by remember { mutableStateOf<String?>(null) }
-
-                var passwordVisible by remember { mutableStateOf(false) }
-                var confirmPasswordVisible by remember { mutableStateOf(false) }
-
-                val context = LocalContext.current
-
                 OutlinedTextField(
                     value = fullName,
                     onValueChange = { fullName = it },
-                    label = { Text("Nome completo") },
+                    label = { Text("Full name") },
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Person, contentDescription = null)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
+                    enabled = !isLoading && !isGoogleLoading,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = colorScheme.primary,
                         unfocusedBorderColor = colorScheme.outline
@@ -150,13 +165,14 @@ fun RegisterScreen(navController: NavController) {
                     value = email,
                     onValueChange = {
                         email = it
-                        emailError = validarEmail(it)
+                        if (emailError != null) emailError = null
                     },
                     label = { Text("Email") },
                     isError = emailError != null,
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Email, contentDescription = null)
                     },
+                    enabled = !isLoading && !isGoogleLoading,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -168,7 +184,12 @@ fun RegisterScreen(navController: NavController) {
                     singleLine = true
                 )
                 if (emailError != null) {
-                    Text(text = emailError!!, color = colorScheme.error, fontSize = 12.sp)
+                    Text(
+                        text = emailError!!,
+                        color = colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -177,9 +198,9 @@ fun RegisterScreen(navController: NavController) {
                     value = password,
                     onValueChange = {
                         password = it
-                        passwordError = validarSenha(it)
+                        if (passwordError != null) passwordError = null
                     },
-                    label = { Text("Palavra-passe") },
+                    label = { Text("Password") },
                     isError = passwordError != null,
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null)
@@ -190,7 +211,9 @@ fun RegisterScreen(navController: NavController) {
                             Icon(imageVector = image, contentDescription = null)
                         }
                     },
+                    enabled = !isLoading && !isGoogleLoading,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -210,9 +233,9 @@ fun RegisterScreen(navController: NavController) {
                     value = confirmPassword,
                     onValueChange = {
                         confirmPassword = it
-                        confirmPasswordError = if (it != password) "As senhas não coincidem" else null
+                        if (confirmPasswordError != null) confirmPasswordError = null
                     },
-                    label = { Text("Confirmar Palavra-passe") },
+                    label = { Text("Confirm password") },
                     isError = confirmPasswordError != null,
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null)
@@ -223,7 +246,9 @@ fun RegisterScreen(navController: NavController) {
                             Icon(imageVector = image, contentDescription = null)
                         }
                     },
+                    enabled = !isLoading && !isGoogleLoading,
                     visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -241,50 +266,84 @@ fun RegisterScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        if (email.isBlank() || password.isBlank() || fullName.isBlank()) {
-                            Toast.makeText(context, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        if (password != confirmPassword) {
-                            Toast.makeText(context, "As senhas não coincidem", Toast.LENGTH_SHORT).show()
+                        if (fullName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+                            Toast.makeText(context, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
-                        auth.createUserWithEmailAndPassword(email, password)
+                        val emailErr = validarEmail(email)
+                        val passErr = validarPassword(password)
+
+                        emailError = emailErr
+                        passwordError = passErr
+
+                        if (emailErr != null || passErr != null) {
+                            val msg = emailErr ?: passErr ?: "Dados inválidos"
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        if (password != confirmPassword) {
+                            confirmPasswordError = "As palavras-passe não coincidem"
+                            Toast.makeText(context, "As palavras-passe não coincidem", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        isLoading = true
+                        auth.createUserWithEmailAndPassword(email.trim(), password)
                             .addOnSuccessListener { result ->
-                                val uid = result.user?.uid ?: return@addOnSuccessListener
+                                val uid = result.user?.uid ?: run {
+                                    isLoading = false
+                                    return@addOnSuccessListener
+                                }
                                 val newUser = User(
                                     uid = uid,
-                                    fullName = fullName,
-                                    email = email,
-                                    username = email.substringBefore("@")
+                                    fullName = fullName.trim(),
+                                    email = email.trim(),
+                                    username = email.trim().substringBefore("@")
                                 )
 
-                                CoroutineScope(Dispatchers.IO).launch {
+                                coroutineScope.launch(Dispatchers.IO) {
                                     try {
                                         UserRepository().saveUser(newUser)
                                         launch(Dispatchers.Main) {
+                                            isLoading = false
                                             Toast.makeText(context, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show()
-                                            navController.navigate(Routes.Login) {
+                                            navController.navigate(Routes.Home) {
                                                 popUpTo(Routes.Register) { inclusive = true }
                                             }
                                         }
                                     } catch (e: Exception) {
                                         launch(Dispatchers.Main) {
-                                            Toast.makeText(context, "Erro ao salvar dados: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            isLoading = false
+                                            Toast.makeText(context, "Erro ao guardar dados do perfil: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                            navController.navigate(Routes.Home) {
+                                                popUpTo(Routes.Register) { inclusive = true }
+                                            }
                                         }
                                     }
                                 }
                             }
-                            .addOnFailureListener {
-                                Toast.makeText(context, "Erro: ${it.message}", Toast.LENGTH_SHORT).show()
+                            .addOnFailureListener { error ->
+                                isLoading = false
+                                val errorMsg = getFirebaseErrorMessage(error)
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
                             }
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
+                    enabled = !isLoading && !isGoogleLoading,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary)
                 ) {
-                    Text(text = "Criar conta", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(text = "Create account", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -292,7 +351,7 @@ fun RegisterScreen(navController: NavController) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     HorizontalDivider(modifier = Modifier.weight(1f), color = colorScheme.outlineVariant)
                     Text(
-                        text = " Ou ",
+                        text = " Or ",
                         modifier = Modifier.padding(horizontal = 16.dp),
                         color = colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
@@ -303,29 +362,130 @@ fun RegisterScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 OutlinedButton(
-                    onClick = { /* Google */ },
+                    onClick = {
+                        if (webClientId.isBlank() || webClientId.startsWith("YOUR_WEB_CLIENT_ID")) {
+                            Toast.makeText(
+                                context,
+                                "Por favor, configure o Web Client ID em GOOGLE_WEB_CLIENT_ID ou strings.xml",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            return@OutlinedButton
+                        }
+
+                        isGoogleLoading = true
+
+                        coroutineScope.launch {
+                            try {
+                                val googleIdOption = GetGoogleIdOption.Builder()
+                                    .setFilterByAuthorizedAccounts(false)
+                                    .setServerClientId(webClientId)
+                                    .setAutoSelectEnabled(false)
+                                    .build()
+
+                                val request = GetCredentialRequest.Builder()
+                                    .addCredentialOption(googleIdOption)
+                                    .build()
+
+                                val result = credentialManager.getCredential(
+                                    request = request,
+                                    context = context
+                                )
+
+                                val credential = result.credential
+                                if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                    val idToken = googleIdTokenCredential.idToken
+                                    val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+
+                                    auth.signInWithCredential(firebaseCredential)
+                                        .addOnCompleteListener { task ->
+                                            isGoogleLoading = false
+                                            if (task.isSuccessful) {
+                                                val firebaseUser = auth.currentUser
+                                                if (firebaseUser != null) {
+                                                    val u = User(
+                                                        uid = firebaseUser.uid,
+                                                        fullName = firebaseUser.displayName ?: "",
+                                                        email = firebaseUser.email ?: "",
+                                                        username = firebaseUser.email?.substringBefore("@") ?: "",
+                                                        profileImageUrl = firebaseUser.photoUrl?.toString() ?: ""
+                                                    )
+                                                    coroutineScope.launch(Dispatchers.IO) {
+                                                        try {
+                                                            UserRepository().saveUserIfNotExists(u)
+                                                        } catch (e: Exception) {
+                                                            e.printStackTrace()
+                                                        }
+                                                    }
+                                                }
+                                                Toast.makeText(context, "Sessão iniciada com o Google!", Toast.LENGTH_SHORT).show()
+                                                navController.navigate(Routes.Home) {
+                                                    popUpTo(Routes.Register) { inclusive = true }
+                                                }
+                                            } else {
+                                                val error = getFirebaseErrorMessage(task.exception)
+                                                Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                } else {
+                                    isGoogleLoading = false
+                                    Toast.makeText(context, "Tipo de credencial inválido.", Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: GetCredentialCancellationException) {
+                                // O utilizador cancelou a seleção de conta Google
+                                isGoogleLoading = false
+                            } catch (e: NoCredentialException) {
+                                isGoogleLoading = false
+                                Toast.makeText(
+                                    context,
+                                    "Nenhuma conta Google disponível no dispositivo ou SHA-1 não registado no Firebase Console.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } catch (e: Exception) {
+                                isGoogleLoading = false
+                                val errorMsg = when {
+                                    e.message?.contains("No credentials available", ignoreCase = true) == true ->
+                                        "Nenhuma conta Google disponível no dispositivo"
+                                    else -> e.localizedMessage ?: "Erro ao iniciar sessão com o Google."
+                                }
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
+                    enabled = !isLoading && !isGoogleLoading,
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, colorScheme.outline)
                 ) {
-                    Image(painter = painterResource(R.drawable.ic_google_image), contentDescription = null)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = "Google", color = colorScheme.onSurface)
+                    if (isGoogleLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = colorScheme.primary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Image(painter = painterResource(R.drawable.login_google_img), modifier = Modifier.size(36.dp), contentDescription = null)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(text = "Google", color = colorScheme.onSurface)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Row {
-                    Text(text = "Já possui conta? ", color = colorScheme.onSurfaceVariant)
+                    Text(text = "Already a user? ", color = colorScheme.onSurfaceVariant)
                     Text(
-                        text = "Entrar",
+                        text = "Sign in",
                         color = colorScheme.primary,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { navController.navigate(Routes.Login) }
+                        modifier = Modifier.clickable {
+                            navController.navigate(Routes.Login) {
+                                popUpTo(Routes.Register) { inclusive = true }
+                            }
+                        }
                     )
                 }
             }
         }
     }
 }
-

@@ -12,7 +12,20 @@
           "package_name": "ecobuild_ai.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "422382578180-uj8s29jb5tiphjan62nsn7qorbojeid7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "ecobuild_ai.app",
+            "certificate_hash": "9495b2451d8a62fcc0ae161556b64324f4a5de39"
+          }
+        },
+        {
+          "client_id": "422382578180-rh8j758rkn2t4d2qt56ic8rm3l3go8tj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCQxqbLSyL2YTUy9Y7PtEerEmwcijzmOiE"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "422382578180-rh8j758rkn2t4d2qt56ic8rm3l3go8tj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -6,4 +6,6 @@ object Routes {
     const val Register = "REGISTER"
     const val Home = "HOME"
     const val Profile = "PROFILE"
+
+    const val NewChat = "NEW CHAT"
 }

@@ -24,4 +24,9 @@
     <string name="brand_build">Build</string>
     <string name="brand_tagline">Building today\na </string>
     <string name="brand_tagline_highlight">sustainable tomorrow.</string>
+
+    <!-- App Bottom Bar routes -->
+    <string name="home">Home</string>
+    <string name="profile">Profile</string>
+    <string name="newChat">New Chat</string>
 </resources>

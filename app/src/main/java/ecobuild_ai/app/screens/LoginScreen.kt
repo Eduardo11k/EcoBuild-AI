@@ -38,6 +38,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseNetworkException
@@ -46,10 +47,15 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.GoogleAuthProvider
 import ecobuild_ai.app.R
 import ecobuild_ai.app.constant.Routes
+import ecobuild_ai.app.model.User
+import ecobuild_ai.app.repository.UserRepository
 import ecobuild_ai.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
@@ -73,24 +79,14 @@ fun validarEmail(email: String): String? {
 }
 
 /**
- * Validação de palavra-passe.
- * Retorna uma mensagem de erro ou null se for válida.
- */
-fun validarPassword(password: String): String? {
-    return when {
-        password.isEmpty() -> "O campo de palavra-passe não pode estar vazio"
-        password.length < 6 -> "A palavra-passe deve ter pelo menos 6 caracteres"
-        else -> null
-    }
-}
-
-/**
  * Converte exceções do Firebase em mensagens legíveis e amigáveis para o utilizador.
  */
 fun getFirebaseErrorMessage(exception: Throwable?): String {
     return when (exception) {
         is FirebaseAuthInvalidUserException -> "Não existe nenhuma conta associada a este email."
         is FirebaseAuthInvalidCredentialsException -> "Email ou palavra-passe incorretos."
+        is FirebaseAuthUserCollisionException -> "Já existe uma conta associada a este email."
+        is FirebaseAuthWeakPasswordException -> "A palavra-passe é demasiado fraca."
         is FirebaseNetworkException -> "Sem ligação à internet. Verifique a sua ligação de rede."
         is FirebaseTooManyRequestsException -> "Muitas tentativas falhadas. Tente novamente mais tarde."
         is FirebaseAuthException -> {
@@ -101,15 +97,19 @@ fun getFirebaseErrorMessage(exception: Throwable?): String {
                 "ERROR_USER_DISABLED" -> "Esta conta foi desativada."
                 "ERROR_TOO_MANY_REQUESTS" -> "Muitas tentativas falhadas. Tente novamente mais tarde."
                 "ERROR_OPERATION_NOT_ALLOWED" -> "Início de sessão por email e palavra-passe não está habilitado."
+                "ERROR_EMAIL_ALREADY_IN_USE" -> "Já existe uma conta associada a este email."
+                "ERROR_WEAK_PASSWORD" -> "A palavra-passe é demasiado fraca."
                 else -> exception.localizedMessage ?: "Erro na autenticação. Tente novamente."
             }
         }
         else -> {
             val msg = exception?.localizedMessage ?: ""
-            if (msg.contains("TOO_MANY_ATTEMPTS_TRY_LATER", ignoreCase = true)) {
-                "Muitas tentativas falhadas. Tente novamente mais tarde."
-            } else {
-                exception?.localizedMessage ?: "Ocorreu um erro inesperado. Tente novamente."
+            when {
+                msg.contains("TOO_MANY_ATTEMPTS_TRY_LATER", ignoreCase = true) ->
+                    "Muitas tentativas falhadas. Tente novamente mais tarde."
+                msg.contains("No credentials available", ignoreCase = true) || msg.contains("16", ignoreCase = true) ->
+                    "Nenhuma conta Google disponível. Adicione uma conta Google no dispositivo ou configure o SHA-1 no Firebase Console."
+                else -> exception?.localizedMessage ?: "Ocorreu um erro inesperado. Tente novamente."
             }
         }
     }
@@ -122,6 +122,13 @@ fun LoginScreen(navController: NavController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
+
+    val defaultWebClientId = stringResource(R.string.default_web_client_id).trim()
+    val webClientId = if (GOOGLE_WEB_CLIENT_ID.isNotBlank()) {
+        GOOGLE_WEB_CLIENT_ID.trim()
+    } else {
+        defaultWebClientId
+    }
 
     var isLoading by remember { mutableStateOf(false) }
     var isGoogleLoading by remember { mutableStateOf(false) }
@@ -416,7 +423,7 @@ fun LoginScreen(navController: NavController) {
                     signInPressed = true
 
                     val emailErr = validarEmail(email)
-                    val passErr = validarPassword(password)
+                    val passErr = if (password.isBlank()) "O campo de palavra-passe não pode estar vazio" else null
 
                     emailError = emailErr
                     passwordError = passErr
@@ -505,16 +512,6 @@ fun LoginScreen(navController: NavController) {
                 onClick = {
                     googlePressed = true
 
-                    val webClientId = if (GOOGLE_WEB_CLIENT_ID.isNotBlank()) {
-                        GOOGLE_WEB_CLIENT_ID.trim()
-                    } else {
-                        try {
-                            context.getString(R.string.default_web_client_id).trim()
-                        } catch (e: Exception) {
-                            ""
-                        }
-                    }
-
                     if (webClientId.isBlank() || webClientId.startsWith("YOUR_WEB_CLIENT_ID")) {
                         Toast.makeText(
                             context,
@@ -555,6 +552,23 @@ fun LoginScreen(navController: NavController) {
                                         isGoogleLoading = false
                                         googlePressed = false
                                         if (task.isSuccessful) {
+                                            val firebaseUser = auth.currentUser
+                                            if (firebaseUser != null) {
+                                                val u = User(
+                                                    uid = firebaseUser.uid,
+                                                    fullName = firebaseUser.displayName ?: "",
+                                                    email = firebaseUser.email ?: "",
+                                                    username = firebaseUser.email?.substringBefore("@") ?: "",
+                                                    profileImageUrl = firebaseUser.photoUrl?.toString() ?: ""
+                                                )
+                                                coroutineScope.launch(Dispatchers.IO) {
+                                                    try {
+                                                        UserRepository().saveUserIfNotExists(u)
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
+                                                }
+                                            }
                                             Toast.makeText(context, "Sessão iniciada com o Google!", Toast.LENGTH_SHORT).show()
                                             navController.navigate(Routes.Home) {
                                                 popUpTo(Routes.Login) { inclusive = true }
@@ -573,10 +587,22 @@ fun LoginScreen(navController: NavController) {
                             // O utilizador cancelou a seleção de conta Google
                             isGoogleLoading = false
                             googlePressed = false
+                        } catch (e: NoCredentialException) {
+                            isGoogleLoading = false
+                            googlePressed = false
+                            Toast.makeText(
+                                context,
+                                "Nenhuma conta Google disponível no dispositivo ou SHA-1 não registado no Firebase Console.",
+                                Toast.LENGTH_LONG
+                            ).show()
                         } catch (e: Exception) {
                             isGoogleLoading = false
                             googlePressed = false
-                            val errorMsg = e.localizedMessage ?: "Erro ao iniciar sessão com o Google."
+                            val errorMsg = when {
+                                e.message?.contains("No credentials available", ignoreCase = true) == true ->
+                                    "Nenhuma conta Google disponível no dispositivo ou SHA-1 não registado no Firebase Console."
+                                else -> e.localizedMessage ?: "Erro ao iniciar sessão com o Google."
+                            }
                             Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
                         }
                     }
