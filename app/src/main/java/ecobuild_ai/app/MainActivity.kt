@@ -12,11 +12,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import ecobuild_ai.app.constant.Routes
+import ecobuild_ai.app.screens.AnalysisScreen
 import ecobuild_ai.app.screens.HomeScreen
 import ecobuild_ai.app.screens.LoginScreen
 import ecobuild_ai.app.screens.NewChatScreen
 import ecobuild_ai.app.screens.ProfileScreen
 import ecobuild_ai.app.screens.RegisterScreen
+import ecobuild_ai.app.screens.UploadScreen
 import ecobuild_ai.app.ui.theme.EcoBuildAITheme
 
 class MainActivity : ComponentActivity() {
@@ -56,10 +58,10 @@ fun AppNavGraph() {
             ProfileScreen(navController = navController)
         }
         composable(Routes.Upload) {
-            NewChatScreen(navController = navController)
+            UploadScreen(navController = navController)
         }
         composable(Routes.Analysis) {
-            HomeScreen(navController = navController)
+            AnalysisScreen(navController = navController)
         }
         composable(Routes.NewChat) {
             NewChatScreen(navController = navController)

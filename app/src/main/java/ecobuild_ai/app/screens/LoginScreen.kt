@@ -4,6 +4,7 @@ import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -613,7 +614,7 @@ fun LoginScreen(navController: NavController) {
                     .scale(googleScale),
                 enabled = !isLoading && !isGoogleLoading,
                 shape = RoundedCornerShape(14.dp),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, BorderLight),
+                border = BorderStroke(1.5.dp, BorderLight),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = SurfaceWhite,
                     contentColor = TextPrimary

@@ -5,13 +5,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Eco
@@ -43,7 +43,6 @@ import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.model.AnalysisItem
 import ecobuild_ai.app.model.sampleRecentAnalyses
 import ecobuild_ai.app.navigation.BottomNavBar
-import ecobuild_ai.app.ui.theme.*
 
 @Composable
 fun HomeScreen(
@@ -53,6 +52,8 @@ fun HomeScreen(
     val auth = remember { FirebaseAuth.getInstance() }
     val currentUser = remember(auth) { auth.currentUser }
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+    val isDark = isSystemInDarkTheme()
 
     // If user is not logged in, redirect to login
     if (currentUser == null) {
@@ -85,7 +86,7 @@ fun HomeScreen(
         bottomBar = {
             BottomNavBar(navController = navController, rotaActual = Routes.Home)
         },
-        containerColor = SurfaceBgLight
+        containerColor = colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -111,13 +112,13 @@ fun HomeScreen(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
-                            .background(EcoGreenIconBg),
+                            .background(colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Eco,
                             contentDescription = null,
-                            tint = EcoGreenPrimary,
+                            tint = colorScheme.primary,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -126,7 +127,7 @@ fun HomeScreen(
                         text = buildAnnotatedString {
                             withStyle(
                                 SpanStyle(
-                                    color = EcoGreenPrimary,
+                                    color = colorScheme.primary,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontSize = 20.sp
                                 )
@@ -135,7 +136,7 @@ fun HomeScreen(
                             }
                             withStyle(
                                 SpanStyle(
-                                    color = TextPrimary,
+                                    color = colorScheme.onBackground,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 20.sp
                                 )
@@ -149,19 +150,19 @@ fun HomeScreen(
                 // Notification Bell icon button with circular border
                 Surface(
                     shape = CircleShape,
-                    color = SurfaceWhite,
-                    border = BorderStroke(1.dp, BorderLight),
+                    color = colorScheme.surface,
+                    border = BorderStroke(1.dp, colorScheme.outlineVariant),
                     modifier = Modifier.size(42.dp)
                 ) {
                     IconButton(
                         onClick = {
-                            Toast.makeText(context, context.getString(R.string.home_notifications), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, R.string.home_notifications, Toast.LENGTH_SHORT).show()
                         }
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Notifications,
                             contentDescription = stringResource(R.string.home_notifications),
-                            tint = TextSecondary,
+                            tint = colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -175,7 +176,7 @@ fun HomeScreen(
                 text = stringResource(R.string.home_greeting_format, firstName),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -183,7 +184,7 @@ fun HomeScreen(
             Text(
                 text = stringResource(R.string.home_subtitle),
                 fontSize = 13.sp,
-                color = TextSecondary,
+                color = colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Normal
             )
 
@@ -193,8 +194,8 @@ fun HomeScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                color = EcoGreenCardBg,
-                border = BorderStroke(1.dp, Color(0xFFD8F3E2))
+                color = if (isDark) colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFF2FBF5),
+                border = BorderStroke(1.dp, if (isDark) colorScheme.outlineVariant else Color(0xFFD8F3E2))
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp)
@@ -210,13 +211,13 @@ fun HomeScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(EcoGreenIconBg),
+                                .background(if (isDark) colorScheme.primaryContainer else Color(0xFFDCFCE7)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Architecture,
                                 contentDescription = null,
-                                tint = EcoGreenPrimary,
+                                tint = colorScheme.primary,
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -225,7 +226,7 @@ fun HomeScreen(
                         Row(
                             modifier = Modifier
                                 .clip(CircleShape)
-                                .background(EcoGreenBadgeBg)
+                                .background(colorScheme.primaryContainer)
                                 .padding(horizontal = 10.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -233,14 +234,14 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
-                                tint = EcoGreenBadgeText,
+                                tint = colorScheme.primary,
                                 modifier = Modifier.size(13.dp)
                             )
                             Text(
                                 text = stringResource(R.string.home_cta_ai_badge),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = EcoGreenBadgeText
+                                color = colorScheme.primary
                             )
                         }
                     }
@@ -251,7 +252,7 @@ fun HomeScreen(
                         text = stringResource(R.string.home_cta_title),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -259,7 +260,7 @@ fun HomeScreen(
                     Text(
                         text = stringResource(R.string.home_cta_description),
                         fontSize = 13.sp,
-                        color = TextSecondary,
+                        color = colorScheme.onSurfaceVariant,
                         lineHeight = 19.sp
                     )
 
@@ -275,8 +276,8 @@ fun HomeScreen(
                             .height(52.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = EcoGreenPrimary,
-                            contentColor = Color.White
+                            containerColor = colorScheme.primary,
+                            contentColor = colorScheme.onPrimary
                         ),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
@@ -287,7 +288,7 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = colorScheme.onPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -313,7 +314,7 @@ fun HomeScreen(
                     text = stringResource(R.string.home_recent_analyses_title),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = colorScheme.onBackground
                 )
 
                 Text(
@@ -324,7 +325,7 @@ fun HomeScreen(
                     },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = EcoGreenPrimary,
+                    color = colorScheme.primary,
                     modifier = Modifier.clickable {
                         showAllAnalyses = !showAllAnalyses
                     }
@@ -337,8 +338,8 @@ fun HomeScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    color = SurfaceWhite,
-                    border = BorderStroke(1.dp, CardBorderColor)
+                    color = colorScheme.surface,
+                    border = BorderStroke(1.dp, colorScheme.outlineVariant)
                 ) {
                     Box(
                         modifier = Modifier.padding(24.dp),
@@ -346,7 +347,7 @@ fun HomeScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.home_no_analyses),
-                            color = TextSecondary,
+                            color = colorScheme.onSurfaceVariant,
                             fontSize = 13.sp
                         )
                     }
@@ -376,13 +377,15 @@ fun RecentAnalysisCard(
     item: AnalysisItem,
     onClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
-        color = SurfaceWhite,
-        border = BorderStroke(1.dp, CardBorderColor),
+        color = colorScheme.surface,
+        border = BorderStroke(1.dp, colorScheme.outlineVariant),
         shadowElevation = 0.5.dp
     ) {
         Row(
@@ -394,7 +397,7 @@ fun RecentAnalysisCard(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(EcoGreenSurface),
+                    .background(colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 if (item.imageUrl != null) {
@@ -415,7 +418,7 @@ fun RecentAnalysisCard(
                     Icon(
                         imageVector = Icons.Default.Eco,
                         contentDescription = null,
-                        tint = EcoGreenPrimary,
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -431,7 +434,7 @@ fun RecentAnalysisCard(
                     text = item.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    color = colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -445,14 +448,14 @@ fun RecentAnalysisCard(
                     Icon(
                         imageVector = Icons.Outlined.CalendarToday,
                         contentDescription = null,
-                        tint = TextSecondary,
+                        tint = colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(12.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = item.date,
                         fontSize = 12.sp,
-                        color = TextSecondary
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -462,7 +465,7 @@ fun RecentAnalysisCard(
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(EcoGreenBadgeBg)
+                        .background(colorScheme.primaryContainer)
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -470,14 +473,14 @@ fun RecentAnalysisCard(
                     Icon(
                         imageVector = Icons.Default.Eco,
                         contentDescription = null,
-                        tint = EcoGreenBadgeText,
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(11.dp)
                     )
                     Text(
                         text = stringResource(R.string.home_score_format, item.score),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = EcoGreenBadgeText
+                        color = colorScheme.primary
                     )
                 }
             }
@@ -486,7 +489,7 @@ fun RecentAnalysisCard(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = TextHint,
+                tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(22.dp)
             )
         }

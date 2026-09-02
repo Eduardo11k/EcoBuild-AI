@@ -20,9 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
@@ -30,13 +33,17 @@ import com.google.firebase.auth.GoogleAuthProvider
 import ecobuild_ai.app.R
 import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.navigation.BottomNavBar
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavController) {
     val auth = remember { FirebaseAuth.getInstance() }
     val currentUser = remember(auth) { auth.currentUser }
-    
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val credentialManager = remember { CredentialManager.create(context) }
+
     if (currentUser == null) {
         LaunchedEffect(Unit) {
             navController.navigate(Routes.Login) {
@@ -50,6 +57,42 @@ fun ProfileScreen(navController: NavController) {
         currentUser.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
     }
 
+    /*
+     * =========================================================================
+     * 🚪 CÓDIGOS DE LOGOUT / TERMINAR SESSÃO (Para aplicar no Perfil ou Definições)
+     * =========================================================================
+     *
+     * Opção A: Logout Universal (Firebase Auth + Credential Manager do Google):
+     * ------------------------------------------------------------------------
+     * fun performLogout() {
+     *     auth.signOut() // 1. Termina a sessão no Firebase Auth
+     *     coroutineScope.launch {
+     *         try {
+     *             // 2. Se for conta Google, limpa o estado das credenciais salvas no dispositivo
+     *             if (isGoogleUser) {
+     *                 credentialManager.clearCredentialState(ClearCredentialStateRequest())
+     *             }
+     *         } catch (e: Exception) {
+     *             e.printStackTrace()
+     *         }
+     *         // 3. Redireciona para o ecrã de Login limpando o histórico de navegação
+     *         navController.navigate(Routes.Login) {
+     *             popUpTo(0) { inclusive = true }
+     *         }
+     *     }
+     * }
+     *
+     * Opção B: Logout Simples (Apenas com Firebase Auth, sem Credential Manager):
+     * --------------------------------------------------------------------------
+     * fun performSimpleLogout() {
+     *     auth.signOut()
+     *     navController.navigate(Routes.Login) {
+     *         popUpTo(Routes.Home) { inclusive = true }
+     *     }
+     * }
+     * =========================================================================
+     */
+
     // Estados dos campos
     var name by remember { mutableStateOf(currentUser.displayName ?: "") }
     var email by remember { mutableStateOf(currentUser.email ?: "") }
@@ -58,8 +101,7 @@ fun ProfileScreen(navController: NavController) {
     // Estado original para detectar mudanças
     val originalName = remember { currentUser.displayName ?: "" }
 
-    val hasChanges = remember(name) {
-        name != originalName }
+    val hasChanges = remember(name) { name != originalName }
 
     // Validação básica
     val isNameValid = name.length >= 3
@@ -88,7 +130,6 @@ fun ProfileScreen(navController: NavController) {
                 ExtendedFloatingActionButton(
                     onClick = {
                         // Lógica de salvar (simulada ou Firebase updateProfile)
-                        // TODO: Implementar updateProfile real
                     },
                     icon = { Icon(Icons.Default.Save, null) },
                     text = { Text(stringResource(R.string.profile_save_button)) },
@@ -135,7 +176,7 @@ fun ProfileScreen(navController: NavController) {
                         )
                     }
                 }
-                
+
                 if (!isGoogleUser) {
                     Box(
                         modifier = Modifier
