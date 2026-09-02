@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.material3)
     implementation(libs.google.fonts)
+    implementation(libs.coil.compose)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     // Firebase BoM e serviços

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">EcoBuild-AI</string>
+    <string name="app_name_prefix">EcoBuild</string>
+    <string name="app_name_suffix">-AI</string>
 
     <!-- Login Screen -->
     <string name="login_welcome_title">Welcome!</string>
@@ -25,8 +27,51 @@
     <string name="brand_tagline">Building today\na </string>
     <string name="brand_tagline_highlight">sustainable tomorrow.</string>
 
-    <!-- App Bottom Bar routes -->
+    <!-- Navigation Bar -->
+    <string name="nav_home">Home</string>
+    <string name="nav_upload">Upload</string>
+    <string name="nav_analysis">Analysis</string>
+    <string name="nav_profile">Profile</string>
     <string name="home">Home</string>
     <string name="profile">Profile</string>
     <string name="newChat">New Chat</string>
+
+    <!-- Home Screen -->
+    <string name="home_greeting_format">Hello, %1$s 👋</string>
+    <string name="home_greeting_fallback">User</string>
+    <string name="home_subtitle">Ready to build sustainably today?</string>
+    <string name="home_notifications">Notifications</string>
+    
+    <!-- Home CTA Card -->
+    <string name="home_cta_ai_badge">AI</string>
+    <string name="home_cta_title">Analyse a new plan</string>
+    <string name="home_cta_description">Upload your architectural plan and get a sustainability score in seconds.</string>
+    <string name="home_cta_button">Start Analysis</string>
+
+    <!-- Home Recent Analyses Section -->
+    <string name="home_recent_analyses_title">Recent Analyses</string>
+    <string name="home_see_all">See all</string>
+    <string name="home_see_less">See less</string>
+    <string name="home_score_format">Score: %1$d%%</string>
+    <string name="home_no_analyses">No recent analyses yet. Start analyzing your first plan!</string>
+
+    <!-- Sample Projects -->
+    <string name="sample_project_1_title">Casa Verde - Lote 12</string>
+    <string name="sample_project_1_date">12 May 2024</string>
+    <string name="sample_project_2_title">Villa Solar - Quinta Nova</string>
+    <string name="sample_project_2_date">08 May 2024</string>
+    <string name="sample_project_3_title">Eco Loft - Rua das Flores</string>
+    <string name="sample_project_3_date">01 May 2024</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">User Profile</string>
+    <string name="profile_name_label">Full Name</string>
+    <string name="profile_email_label">Email Address</string>
+    <string name="profile_phone_label">Phone Number</string>
+    <string name="profile_save_button">Save Changes</string>
+    <string name="profile_google_account_badge">Google Account</string>
+    <string name="profile_edit_photo">Edit Photo</string>
+    <string name="profile_invalid_name">Name must be at least 3 characters</string>
+    <string name="profile_invalid_phone">Invalid phone format</string>
+    <string name="profile_update_success">Profile updated successfully!</string>
 </resources>

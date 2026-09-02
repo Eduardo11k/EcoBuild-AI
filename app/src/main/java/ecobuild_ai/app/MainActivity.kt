@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.screens.HomeScreen
 import ecobuild_ai.app.screens.LoginScreen
+import ecobuild_ai.app.screens.NewChatScreen
 import ecobuild_ai.app.screens.ProfileScreen
 import ecobuild_ai.app.screens.RegisterScreen
 import ecobuild_ai.app.ui.theme.EcoBuildAITheme
@@ -24,42 +25,44 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             EcoBuildAITheme {
-                Surface(modifier = Modifier.fillMaxSize())
-                {
+                Surface(modifier = Modifier.fillMaxSize()) {
                     EcoBuild_AI()
                 }
             }
         }
     }
 }
+
 @Composable
 fun EcoBuild_AI() {
     AppNavGraph()
 }
 
 @Composable
-fun AppNavGraph()
-{
+fun AppNavGraph() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = Routes.Login)
-    {
-        composable(Routes.Home)
-        {
+    NavHost(navController = navController, startDestination = Routes.Login) {
+        composable(Routes.Home) {
             HomeScreen(navController = navController)
         }
-        composable(Routes.Login)
-        {
+        composable(Routes.Login) {
             LoginScreen(navController = navController)
         }
-        composable(Routes.Register)
-        {
+        composable(Routes.Register) {
             RegisterScreen(navController = navController)
         }
-        composable(Routes.Profile)
-        {
+        composable(Routes.Profile) {
             ProfileScreen(navController = navController)
         }
-
+        composable(Routes.Upload) {
+            NewChatScreen(navController = navController)
+        }
+        composable(Routes.Analysis) {
+            HomeScreen(navController = navController)
+        }
+        composable(Routes.NewChat) {
+            NewChatScreen(navController = navController)
+        }
     }
 }
