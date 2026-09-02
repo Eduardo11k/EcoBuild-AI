@@ -38,7 +38,6 @@
 
     <!-- Home Screen -->
     <string name="home_greeting_format">Hello, %1$s 👋</string>
-    <string name="home_greeting_fallback">User</string>
     <string name="home_subtitle">Ready to build sustainably today?</string>
     <string name="home_notifications">Notifications</string>
     

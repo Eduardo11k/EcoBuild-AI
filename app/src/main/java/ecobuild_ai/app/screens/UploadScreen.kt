@@ -1,32 +1,30 @@
 package ecobuild_ai.app.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Architecture
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,41 +32,26 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.navigation.BottomNavBar
-import androidx.compose.foundation.clickable
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonColors
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedIconButton
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.layout.ContentScale
-import androidx.core.content.FileProvider
-import coil.compose.AsyncImage
 import ecobuild_ai.app.ui.theme.BorderLight
+import ecobuild_ai.app.viewmodel.UploadViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -95,12 +78,45 @@ fun Modifier.dashedBorder(
     )
 }
 
-data class UploadItems( val selectedIcon: ImageVector, val iconName: String, val id: Int)
+// Render First PDF page
+fun getPdfFirstPageThumbnail(context: android.content.Context, uri: Uri): Bitmap? {
+    return try {
+        val fileDescriptor = context.contentResolver.openFileDescriptor(uri, "r") ?: return null
+        val pdfRenderer = PdfRenderer(fileDescriptor)
+        if (pdfRenderer.pageCount == 0) {
+            pdfRenderer.close()
+            fileDescriptor.close()
+            return null
+        }
+        val page = pdfRenderer.openPage(0)
+
+        // Mantém a proporção da página, com largura alvo fixa
+        val targetWidth = 600
+        val scale = targetWidth.toFloat() / page.width
+        val targetHeight = (page.height * scale).toInt()
+
+        val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+        // Fundo branco (PDFs têm fundo transparente por padrão)
+        bitmap.eraseColor(android.graphics.Color.WHITE)
+        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+
+        page.close()
+        pdfRenderer.close()
+        fileDescriptor.close()
+        bitmap
+    } catch (e: Exception) {
+        Log.e("KUDIA_DEBUG", "getPdfFirstPageThumbnail: erro ao renderizar PDF: ${e.message}", e)
+        null
+    }
+}
+
+data class UploadItems(val selectedIcon: ImageVector, val iconName: String, val id: Int)
 
 data class SelectedFile(
     val uri: Uri,
     val name: String,
-    val sizeLabel: String
+    val sizeLabel: String,
+    val isPDF: Boolean = false
 )
 
 fun getFileInfo(context: android.content.Context, uri: Uri): SelectedFile {
@@ -116,21 +132,32 @@ fun getFileInfo(context: android.content.Context, uri: Uri): SelectedFile {
     }
     val sizeMb = size / (1024f * 1024f)
     val sizeLabel = "%.1f MB".format(sizeMb)
-    return SelectedFile(uri, name, sizeLabel)
+    val isPDF = context.contentResolver.getType(uri) == "application/pdf" || name.lowercase().endsWith(".pdf")
+    return SelectedFile(uri, name, sizeLabel, isPDF)
 }
 
 @Composable
-fun UploadScreen(navController: NavController) {
+fun UploadScreen(navController: NavController, viewModel: UploadViewModel) {
     val firebaseAuth = remember { FirebaseAuth.getInstance() }
     val currentUser = remember(firebaseAuth) { firebaseAuth.currentUser }
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
     val isDark = isSystemInDarkTheme()
+    val coroutine = rememberCoroutineScope()
 
-    var selectedFile by remember { mutableStateOf<SelectedFile?>(null) }
+    var selectedFile by remember { mutableStateOf<SelectedFile?>(viewModel.selectedFile) }
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    var pdfThumbnails by remember { mutableStateOf<Bitmap?>(viewModel.pdfThumbnail) }
 
-// Câmera
+    // Sync back to ViewModel when state changes
+    LaunchedEffect(selectedFile) {
+        viewModel.selectedFile = selectedFile
+    }
+    LaunchedEffect(pdfThumbnails) {
+        viewModel.pdfThumbnail = pdfThumbnails
+    }
+
+    // Launcher para capturar foto
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
@@ -139,18 +166,39 @@ fun UploadScreen(navController: NavController) {
         }
     }
 
-// Galeria (imagens)
+    // Launcher para solicitar permissão de câmera
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val photoFile = File.createTempFile("camera_", ".jpg", context.cacheDir)
+            val uri = FileProvider.getUriForFile(
+                context, "${context.packageName}.fileprovider", photoFile
+            )
+            cameraUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            Toast.makeText(context, "Permissão de câmera negada", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Galeria (imagens)
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedFile = getFileInfo(context, it) }
     }
 
-// PDF
+    // PDF
     val pdfLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let { selectedFile = getFileInfo(context, it) }
+        uri?.let {
+            selectedFile = getFileInfo(context, it)
+            coroutine.launch(Dispatchers.IO) {
+                pdfThumbnails = getPdfFirstPageThumbnail(context, it)
+            }
+        }
     }
 
     Scaffold(
@@ -231,7 +279,7 @@ fun UploadScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 val items = listOf(
-                    UploadItems(Icons.Default.PhotoCamera, "Camera",1),
+                    UploadItems(Icons.Default.PhotoCamera, "Camera", 1),
                     UploadItems(Icons.Default.Photo, "Gallery", 2),
                     UploadItems(Icons.Default.Description, "PDF", 3)
                 )
@@ -243,23 +291,26 @@ fun UploadScreen(navController: NavController) {
                             .clickable {
                                 when (item.id) {
                                     1 -> {
-                                        val photoFile = File.createTempFile("camera_", ".jpg", context.cacheDir)
-                                        val uri = FileProvider.getUriForFile(
-                                            context, "${context.packageName}.fileprovider", photoFile
-                                        )
-                                        cameraUri = uri
-                                        cameraLauncher.launch(uri)
+                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                            val photoFile = File.createTempFile("camera_", ".jpg", context.cacheDir)
+                                            val uri = FileProvider.getUriForFile(
+                                                context, "${context.packageName}.fileprovider", photoFile
+                                            )
+                                            cameraUri = uri
+                                            cameraLauncher.launch(uri)
+                                        } else {
+                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                        }
                                     }
                                     2 -> galleryLauncher.launch("image/*")
                                     else -> pdfLauncher.launch(arrayOf("application/pdf"))
                                 }
-                                Toast.makeText(context, item.iconName, Toast.LENGTH_SHORT).show()
                             }
                     ) {
                         Icon(
                             imageVector = item.selectedIcon,
                             contentDescription = item.iconName,
-                            tint = if (!isDark) Color.Black.copy(alpha = 0.6f) else Color.Gray.copy(0.6f ) ,
+                            tint = if (!isDark) Color.Black.copy(alpha = 0.6f) else Color.Gray.copy(0.6f),
                             modifier = Modifier.size(36.dp)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -288,22 +339,55 @@ fun UploadScreen(navController: NavController) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Preview", color = colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
-                                IconButton(onClick = { selectedFile = null }) {
+                                IconButton(onClick = { 
+                                    selectedFile = null
+                                    pdfThumbnails = null
+                                }) {
                                     Icon(Icons.Default.Close, contentDescription = "Remover", tint = colorScheme.onSurfaceVariant)
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            AsyncImage(
-                                model = file.uri,
-                                contentDescription = file.name,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(140.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                            )
+                            if (file.isPDF) {
+                                if (pdfThumbnails != null) {
+                                    Image(
+                                        bitmap = pdfThumbnails!!.asImageBitmap(),
+                                        contentDescription = file.name,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(140.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(140.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(colorScheme.surface),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PictureAsPdf,
+                                            contentDescription = null,
+                                            tint = colorScheme.primary,
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                    }
+                                }
+                            } else {
+                                AsyncImage(
+                                    model = file.uri,
+                                    contentDescription = file.name,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(140.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -326,7 +410,7 @@ fun UploadScreen(navController: NavController) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             OutlinedButton(
                 onClick = {
                     navController.navigate(Routes.Analysis) {

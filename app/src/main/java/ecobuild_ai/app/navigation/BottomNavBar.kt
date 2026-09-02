@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -25,12 +26,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import coil.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import ecobuild_ai.app.R
 import ecobuild_ai.app.constant.Routes
 
@@ -44,6 +49,12 @@ data class NavItem(
 @Composable
 fun BottomNavBar(navController: NavController, rotaActual: String) {
     val colorScheme = MaterialTheme.colorScheme
+    val auth = remember { FirebaseAuth.getInstance() }
+    val currentUser = remember(auth) { auth.currentUser }
+    val isGoogleUser = remember(currentUser) {
+        currentUser?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true
+    }
+    val photoUrl = remember(currentUser) { currentUser?.photoUrl }
 
     val items = listOf(
         NavItem(Routes.Home, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
@@ -101,12 +112,23 @@ fun BottomNavBar(navController: NavController, rotaActual: String) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(
-                                        imageVector = item.selectedIcon,
-                                        contentDescription = stringResource(item.labelRes),
-                                        tint = colorScheme.onPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                    if (item.route == Routes.Profile && isGoogleUser && photoUrl != null) {
+                                        AsyncImage(
+                                            model = photoUrl,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = item.selectedIcon,
+                                            contentDescription = stringResource(item.labelRes),
+                                            tint = colorScheme.onPrimary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                     Text(
                                         text = stringResource(item.labelRes),
                                         color = colorScheme.onPrimary,
@@ -121,13 +143,23 @@ fun BottomNavBar(navController: NavController, rotaActual: String) {
                                 verticalArrangement = Arrangement.Center,
                                 modifier = Modifier.height(36.dp)
                             ) {
-                                Icon(
-                                    imageVector = item.unselectedIcon,
-                                    contentDescription = stringResource(item.labelRes),
-                                    tint = colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                //Spacer(modifier = Modifier.height(2.dp)) error be here
+                                if (item.route == Routes.Profile && isGoogleUser && photoUrl != null) {
+                                    AsyncImage(
+                                        model = photoUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = item.unselectedIcon,
+                                        contentDescription = stringResource(item.labelRes),
+                                        tint = colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                                 Text(
                                     text = stringResource(item.labelRes),
                                     color = colorScheme.onSurfaceVariant,

@@ -8,18 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import ecobuild_ai.app.constant.Routes
-import ecobuild_ai.app.screens.AnalysisScreen
-import ecobuild_ai.app.screens.HomeScreen
-import ecobuild_ai.app.screens.LoginScreen
-import ecobuild_ai.app.screens.NewChatScreen
-import ecobuild_ai.app.screens.ProfileScreen
-import ecobuild_ai.app.screens.RegisterScreen
-import ecobuild_ai.app.screens.UploadScreen
+import ecobuild_ai.app.screens.*
 import ecobuild_ai.app.ui.theme.EcoBuildAITheme
+import ecobuild_ai.app.viewmodel.UploadViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +39,7 @@ fun EcoBuild_AI() {
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
+    val uploadViewModel: UploadViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = Routes.Login) {
         composable(Routes.Home) {
@@ -58,7 +55,7 @@ fun AppNavGraph() {
             ProfileScreen(navController = navController)
         }
         composable(Routes.Upload) {
-            UploadScreen(navController = navController)
+            UploadScreen(navController = navController, viewModel = uploadViewModel)
         }
         composable(Routes.Analysis) {
             AnalysisScreen(navController = navController)
