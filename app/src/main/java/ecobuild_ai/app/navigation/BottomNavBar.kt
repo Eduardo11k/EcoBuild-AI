@@ -49,12 +49,10 @@ data class NavItem(
 @Composable
 fun BottomNavBar(navController: NavController, rotaActual: String) {
     val colorScheme = MaterialTheme.colorScheme
-    val auth = remember { FirebaseAuth.getInstance() }
-    val currentUser = remember(auth) { auth.currentUser }
-    val isGoogleUser = remember(currentUser) {
-        currentUser?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true
-    }
-    val photoUrl = remember(currentUser) { currentUser?.photoUrl }
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val isGoogleUser = currentUser?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true
+    val photoUrl = currentUser?.photoUrl
 
     val items = listOf(
         NavItem(Routes.Home, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),

@@ -149,6 +149,11 @@ fun RegisterScreen(navController: NavController) {
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Person, contentDescription = null)
                     },
+                    supportingText = {
+                        if (fullName.length < 4 || fullName.isEmpty()) {
+                            Text(stringResource(R.string.profile_invalid_name), color = colorScheme.error)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     enabled = !isLoading && !isGoogleLoading,
@@ -292,31 +297,36 @@ fun RegisterScreen(navController: NavController) {
                         isLoading = true
                         auth.createUserWithEmailAndPassword(email.trim(), password)
                             .addOnSuccessListener { result ->
-                                val uid = result.user?.uid ?: run {
+                                val firebaseUser = result.user ?: run {
                                     isLoading = false
                                     return@addOnSuccessListener
                                 }
-                                val newUser = User(
-                                    uid = uid,
-                                    fullName = fullName.trim(),
-                                    email = email.trim(),
-                                    username = email.trim().substringBefore("@")
-                                )
+                                val cleanName = fullName.trim()
+                                val cleanEmail = email.trim()
+                                val cleanUsername = cleanEmail.substringBefore("@")
 
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    try {
-                                        UserRepository().saveUser(newUser)
+                                // 1. Atualizar o displayName do Firebase Auth imediatamente
+                                val profileUpdates = com.google.firebase.auth.userProfileChangeRequest {
+                                    displayName = cleanName
+                                }
+
+                                firebaseUser.updateProfile(profileUpdates).addOnCompleteListener {
+                                    // 2. Salvar no Firestore e aguardar antes de navegar
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        val newUser = User(
+                                            uid = firebaseUser.uid,
+                                            fullName = cleanName,
+                                            email = cleanEmail,
+                                            username = cleanUsername
+                                        )
+                                        try {
+                                            UserRepository().saveUser(newUser)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         launch(Dispatchers.Main) {
                                             isLoading = false
                                             Toast.makeText(context, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show()
-                                            navController.navigate(Routes.Home) {
-                                                popUpTo(Routes.Register) { inclusive = true }
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        launch(Dispatchers.Main) {
-                                            isLoading = false
-                                            Toast.makeText(context, "Erro ao guardar dados do perfil: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
                                             navController.navigate(Routes.Home) {
                                                 popUpTo(Routes.Register) { inclusive = true }
                                             }
@@ -399,7 +409,6 @@ fun RegisterScreen(navController: NavController) {
 
                                     auth.signInWithCredential(firebaseCredential)
                                         .addOnCompleteListener { task ->
-                                            isGoogleLoading = false
                                             if (task.isSuccessful) {
                                                 val firebaseUser = auth.currentUser
                                                 if (firebaseUser != null) {
@@ -416,13 +425,22 @@ fun RegisterScreen(navController: NavController) {
                                                         } catch (e: Exception) {
                                                             e.printStackTrace()
                                                         }
+                                                        launch(Dispatchers.Main) {
+                                                            isGoogleLoading = false
+                                                            Toast.makeText(context, "Sessão iniciada com o Google!", Toast.LENGTH_SHORT).show()
+                                                            navController.navigate(Routes.Home) {
+                                                                popUpTo(Routes.Register) { inclusive = true }
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    isGoogleLoading = false
+                                                    navController.navigate(Routes.Home) {
+                                                        popUpTo(Routes.Register) { inclusive = true }
                                                     }
                                                 }
-                                                Toast.makeText(context, "Sessão iniciada com o Google!", Toast.LENGTH_SHORT).show()
-                                                navController.navigate(Routes.Home) {
-                                                    popUpTo(Routes.Register) { inclusive = true }
-                                                }
                                             } else {
+                                                isGoogleLoading = false
                                                 val error = getFirebaseErrorMessage(task.exception)
                                                 Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                                             }

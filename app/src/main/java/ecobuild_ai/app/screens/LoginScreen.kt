@@ -550,8 +550,6 @@ fun LoginScreen(navController: NavController) {
 
                                 auth.signInWithCredential(firebaseCredential)
                                     .addOnCompleteListener { task ->
-                                        isGoogleLoading = false
-                                        googlePressed = false
                                         if (task.isSuccessful) {
                                             val firebaseUser = auth.currentUser
                                             if (firebaseUser != null) {
@@ -568,13 +566,25 @@ fun LoginScreen(navController: NavController) {
                                                     } catch (e: Exception) {
                                                         e.printStackTrace()
                                                     }
+                                                    launch(Dispatchers.Main) {
+                                                        isGoogleLoading = false
+                                                        googlePressed = false
+                                                        Toast.makeText(context, "Sessão iniciada com o Google!", Toast.LENGTH_SHORT).show()
+                                                        navController.navigate(Routes.Home) {
+                                                            popUpTo(Routes.Login) { inclusive = true }
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                isGoogleLoading = false
+                                                googlePressed = false
+                                                navController.navigate(Routes.Home) {
+                                                    popUpTo(Routes.Login) { inclusive = true }
                                                 }
                                             }
-                                            Toast.makeText(context, "Sessão iniciada com o Google!", Toast.LENGTH_SHORT).show()
-                                            navController.navigate(Routes.Home) {
-                                                popUpTo(Routes.Login) { inclusive = true }
-                                            }
                                         } else {
+                                            isGoogleLoading = false
+                                            googlePressed = false
                                             val error = getFirebaseErrorMessage(task.exception)
                                             Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                                         }

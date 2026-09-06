@@ -138,8 +138,8 @@ fun getFileInfo(context: android.content.Context, uri: Uri): SelectedFile {
 
 @Composable
 fun UploadScreen(navController: NavController, viewModel: UploadViewModel) {
-    val firebaseAuth = remember { FirebaseAuth.getInstance() }
-    val currentUser = remember(firebaseAuth) { firebaseAuth.currentUser }
+    val firebaseAuth = FirebaseAuth.getInstance()
+    val currentUser = firebaseAuth.currentUser
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
     val isDark = isSystemInDarkTheme()
@@ -228,7 +228,7 @@ fun UploadScreen(navController: NavController, viewModel: UploadViewModel) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Card com Borda Tracejada ──────────────────────────────────────
+            // ── Card com Borda Tracejada
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()

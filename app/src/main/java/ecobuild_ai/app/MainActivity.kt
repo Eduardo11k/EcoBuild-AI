@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.screens.*
 import ecobuild_ai.app.ui.theme.EcoBuildAITheme
+import ecobuild_ai.app.viewmodel.ProfileViewModel
 import ecobuild_ai.app.viewmodel.UploadViewModel
 
 class MainActivity : ComponentActivity() {
@@ -52,7 +53,10 @@ fun AppNavGraph() {
             RegisterScreen(navController = navController)
         }
         composable(Routes.Profile) {
-            ProfileScreen(navController = navController)
+            // ProfileViewModel scoped ao destino — é destruído quando o utilizador sai
+            // do ecrã de perfil e recriado na próxima entrada (uid sempre fresco)
+            val profileViewModel: ProfileViewModel = viewModel(it)
+            ProfileScreen(navController = navController, viewModel = profileViewModel)
         }
         composable(Routes.Upload) {
             UploadScreen(navController = navController, viewModel = uploadViewModel)
