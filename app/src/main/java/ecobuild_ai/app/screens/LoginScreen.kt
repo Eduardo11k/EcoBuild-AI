@@ -557,7 +557,6 @@ fun LoginScreen(navController: NavController) {
                                                     uid = firebaseUser.uid,
                                                     fullName = firebaseUser.displayName ?: "",
                                                     email = firebaseUser.email ?: "",
-                                                    username = firebaseUser.email?.substringBefore("@") ?: "",
                                                     profileImageUrl = firebaseUser.photoUrl?.toString() ?: ""
                                                 )
                                                 coroutineScope.launch(Dispatchers.IO) {
@@ -809,4 +808,3 @@ fun LoginScreen(navController: NavController) {
         )
     }
 }
-

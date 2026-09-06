@@ -13,7 +13,7 @@ class UserRepository {
         try {
             usersCollection.document(user.uid).set(user).await()
         } catch (e: Exception) {
-            android.util.Log.e("UserRepository", "Erro ao salvar usuario no Firestore: ${e.message}", e)
+            android.util.Log.e("UserRepository", "Error saving user to Firestore: ${e.message}", e)
         }
     }
 
@@ -33,17 +33,13 @@ class UserRepository {
                         updates["fullName"] = user.fullName
                     }
                 }
-                val currentUsername = doc.getString("username")
-                if (currentUsername.isNullOrEmpty() && user.username.isNotEmpty()) {
-                    updates["username"] = user.username
-                }
 
                 if (updates.isNotEmpty()) {
                     usersCollection.document(user.uid).update(updates).await()
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("UserRepository", "Erro em saveUserIfNotExists: ${e.message}", e)
+            android.util.Log.e("UserRepository", "Error in saveUserIfNotExists: ${e.message}", e)
         }
     }
 
@@ -51,29 +47,26 @@ class UserRepository {
         return try {
             usersCollection.document(uid).get().await().toObject(User::class.java)
         } catch (e: Exception) {
-            android.util.Log.e("UserRepository", "Erro ao buscar usuario: ${e.message}", e)
+            android.util.Log.e("UserRepository", "Error fetching user: ${e.message}", e)
             null
         }
     }
 
-    suspend fun updateProfile(uid: String, fullName: String, username: String, email: String, profileImageUrl: String = "") {
+    suspend fun updateProfile(uid: String, fullName: String, email: String, profileImageUrl: String = "") {
         try {
             val updates = mutableMapOf<String, Any>(
                 "fullName" to fullName,
-                "email" to email,
-                "username" to username
+                "email" to email
             )
             if (profileImageUrl.isNotEmpty()) {
                 updates["profileImageUrl"] = profileImageUrl
             }
             usersCollection.document(uid).update(updates).await()
         } catch (e: Exception) {
-            android.util.Log.e("UserRepository", "Erro ao atualizar perfil: ${e.message}", e)
-            // Se o documento ainda não existia por algum motivo, cria-o agora com set
+            android.util.Log.e("UserRepository", "Error updating profile: ${e.message}", e)
             val newUser = User(
                 uid = uid,
                 fullName = fullName,
-                username = username,
                 email = email,
                 profileImageUrl = profileImageUrl
             )

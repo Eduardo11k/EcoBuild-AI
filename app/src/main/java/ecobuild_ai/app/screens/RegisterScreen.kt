@@ -53,9 +53,9 @@ import kotlinx.coroutines.launch
 
 fun validarPassword(senha: String): String? {
     return when {
-        senha.length < 7 -> "Mínimo de 7 caracteres"
-        !senha.any { it.isDigit() } -> "Deve conter pelo menos 1 número"
-        !senha.any { !it.isLetterOrDigit() } -> "Deve conter 1 caractere especial"
+        senha.length < 7 -> "Minimum 7 characters"
+        !senha.any { it.isDigit() } -> "Must contain at least 1 number"
+        !senha.any { !it.isLetterOrDigit() } -> "Must contain 1 special character"
         else -> null
     }
 }
@@ -150,7 +150,7 @@ fun RegisterScreen(navController: NavController) {
                         Icon(imageVector = Icons.Default.Person, contentDescription = null)
                     },
                     supportingText = {
-                        if (fullName.length < 4 || fullName.isEmpty()) {
+                        if (fullName.length < 3 && fullName.isNotEmpty()) {
                             Text(stringResource(R.string.profile_invalid_name), color = colorScheme.error)
                         }
                     },
@@ -272,7 +272,7 @@ fun RegisterScreen(navController: NavController) {
                 Button(
                     onClick = {
                         if (fullName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-                            Toast.makeText(context, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
@@ -283,14 +283,14 @@ fun RegisterScreen(navController: NavController) {
                         passwordError = passErr
 
                         if (emailErr != null || passErr != null) {
-                            val msg = emailErr ?: passErr ?: "Dados inválidos"
+                            val msg = emailErr ?: passErr ?: "Invalid data"
                             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
                         if (password != confirmPassword) {
-                            confirmPasswordError = "As palavras-passe não coincidem"
-                            Toast.makeText(context, "As palavras-passe não coincidem", Toast.LENGTH_SHORT).show()
+                            confirmPasswordError = "Passwords do not match"
+                            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
 
@@ -303,21 +303,17 @@ fun RegisterScreen(navController: NavController) {
                                 }
                                 val cleanName = fullName.trim()
                                 val cleanEmail = email.trim()
-                                val cleanUsername = cleanEmail.substringBefore("@")
 
-                                // 1. Atualizar o displayName do Firebase Auth imediatamente
                                 val profileUpdates = com.google.firebase.auth.userProfileChangeRequest {
                                     displayName = cleanName
                                 }
 
                                 firebaseUser.updateProfile(profileUpdates).addOnCompleteListener {
-                                    // 2. Salvar no Firestore e aguardar antes de navegar
                                     coroutineScope.launch(Dispatchers.IO) {
                                         val newUser = User(
                                             uid = firebaseUser.uid,
                                             fullName = cleanName,
-                                            email = cleanEmail,
-                                            username = cleanUsername
+                                            email = cleanEmail
                                         )
                                         try {
                                             UserRepository().saveUser(newUser)
@@ -326,7 +322,7 @@ fun RegisterScreen(navController: NavController) {
                                         }
                                         launch(Dispatchers.Main) {
                                             isLoading = false
-                                            Toast.makeText(context, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Account created successfully!", Toast.LENGTH_SHORT).show()
                                             navController.navigate(Routes.Home) {
                                                 popUpTo(Routes.Register) { inclusive = true }
                                             }
@@ -376,7 +372,7 @@ fun RegisterScreen(navController: NavController) {
                         if (webClientId.isBlank() || webClientId.startsWith("YOUR_WEB_CLIENT_ID")) {
                             Toast.makeText(
                                 context,
-                                "Por favor, configure o Web Client ID em GOOGLE_WEB_CLIENT_ID ou strings.xml",
+                                "Please configure Web Client ID in GOOGLE_WEB_CLIENT_ID or strings.xml",
                                 Toast.LENGTH_LONG
                             ).show()
                             return@OutlinedButton
@@ -416,7 +412,6 @@ fun RegisterScreen(navController: NavController) {
                                                         uid = firebaseUser.uid,
                                                         fullName = firebaseUser.displayName ?: "",
                                                         email = firebaseUser.email ?: "",
-                                                        username = firebaseUser.email?.substringBefore("@") ?: "",
                                                         profileImageUrl = firebaseUser.photoUrl?.toString() ?: ""
                                                     )
                                                     coroutineScope.launch(Dispatchers.IO) {
@@ -427,7 +422,7 @@ fun RegisterScreen(navController: NavController) {
                                                         }
                                                         launch(Dispatchers.Main) {
                                                             isGoogleLoading = false
-                                                            Toast.makeText(context, "Sessão iniciada com o Google!", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(context, "Signed in with Google!", Toast.LENGTH_SHORT).show()
                                                             navController.navigate(Routes.Home) {
                                                                 popUpTo(Routes.Register) { inclusive = true }
                                                             }
@@ -447,24 +442,23 @@ fun RegisterScreen(navController: NavController) {
                                         }
                                 } else {
                                     isGoogleLoading = false
-                                    Toast.makeText(context, "Tipo de credencial inválido.", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Invalid credential type.", Toast.LENGTH_SHORT).show()
                                 }
                             } catch (e: GetCredentialCancellationException) {
-                                // O utilizador cancelou a seleção de conta Google
                                 isGoogleLoading = false
                             } catch (e: NoCredentialException) {
                                 isGoogleLoading = false
                                 Toast.makeText(
                                     context,
-                                    "Nenhuma conta Google disponível no dispositivo ou SHA-1 não registado no Firebase Console.",
+                                    "No Google accounts available on device or SHA-1 not registered in Firebase Console.",
                                     Toast.LENGTH_LONG
                                 ).show()
                             } catch (e: Exception) {
                                 isGoogleLoading = false
                                 val errorMsg = when {
                                     e.message?.contains("No credentials available", ignoreCase = true) == true ->
-                                        "Nenhuma conta Google disponível no dispositivo"
-                                    else -> e.localizedMessage ?: "Erro ao iniciar sessão com o Google."
+                                        "No Google accounts available"
+                                    else -> e.localizedMessage ?: "Error signing in with Google."
                                 }
                                 Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
                             }

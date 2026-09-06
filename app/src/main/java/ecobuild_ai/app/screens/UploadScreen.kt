@@ -270,7 +270,7 @@ fun UploadScreen(navController: NavController, viewModel: UploadViewModel) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(15.dp))
+            Spacer(modifier = Modifier.height(22.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

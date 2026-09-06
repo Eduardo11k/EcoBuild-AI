@@ -40,14 +40,13 @@ import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.model.User
 import ecobuild_ai.app.navigation.BottomNavBar
 import ecobuild_ai.app.viewmodel.ProfileViewModel
-import ecobuild_ai.app.viewmodel.UploadViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
     val auth = FirebaseAuth.getInstance()
-    val currentUser = auth.currentUser   // sempre o utilizador atual — não usar remember aqui
+    val currentUser = auth.currentUser
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
@@ -55,7 +54,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
     val colorScheme = MaterialTheme.colorScheme
     val userData by viewModel.userData.collectAsStateWithLifecycle()
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
-    val Sucess by viewModel.saveSuccess.collectAsStateWithLifecycle()
+    val success by viewModel.saveSuccess.collectAsStateWithLifecycle()
 
     if (currentUser == null) {
         LaunchedEffect(Unit) {
@@ -70,45 +69,34 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
         currentUser.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
     }
 
-
-
-      fun performLogout() {
-          auth.signOut() // 1. Termina a sessão no Firebase Auth
+    fun performLogout() {
+        auth.signOut()
         coroutineScope.launch {
-             try {
-                  // 2. Se for conta Google, limpa o estado das credenciais salvas no dispositivo
-                 if (isGoogleUser) {
-                      credentialManager.clearCredentialState(ClearCredentialStateRequest())
-                  }
-              } catch (e: Exception) {
-                  e.printStackTrace()
+            try {
+                if (isGoogleUser) {
+                    credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-             // 3. Redireciona para o ecrã de Login limpando o histórico de navegação
-             navController.navigate(Routes.Login) {
-                 popUpTo(0) { inclusive = true }
-             }
+            navController.navigate(Routes.Login) {
+                popUpTo(0) { inclusive = true }
+            }
         }
-      }
-
-
+    }
 
     val isLoaded by viewModel.isLoaded.collectAsStateWithLifecycle()
 
-    // Inicialização direta: prioriza Firestore se já disponível, senão Auth
-    var name     by remember { mutableStateOf(userData?.fullName?.ifEmpty { null } ?: currentUser.displayName ?: "") }
-    var email    by remember { mutableStateOf(userData?.email?.ifEmpty { null } ?: currentUser.email ?: "") }
-    var username by remember { mutableStateOf(userData?.username?.ifEmpty { null } ?: currentUser.email?.substringBefore("@") ?: "") }
+    var name by remember { mutableStateOf(userData?.fullName?.ifEmpty { null } ?: currentUser.displayName ?: "") }
+    var email by remember { mutableStateOf(userData?.email?.ifEmpty { null } ?: currentUser.email ?: "") }
     var photoUrl by remember { mutableStateOf(userData?.profileImageUrl?.ifEmpty { null } ?: currentUser.photoUrl?.toString() ?: "") }
 
-    // Rastreia se o usuário já tocou no campo
     var userModifiedName by remember { mutableStateOf(false) }
 
-    // Força o recarregamento ao entrar no ecrã
     LaunchedEffect(currentUser.uid) {
         viewModel.refreshUserData()
     }
 
-    // Validação consistente (mínimo de 3 caracteres não-vazios)
     val isNameValid = name.trim().length >= 3
 
     val currentSavedName = userData?.fullName?.ifEmpty { null } ?: currentUser.displayName ?: ""
@@ -126,7 +114,6 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val updatedProfileMsg = stringResource(R.string.profile_update_success)
 
-    // Sync quando o Firestore responder (apenas se o usuário não tiver digitado nada ainda)
     LaunchedEffect(userData, isLoaded) {
         if (!isLoaded) return@LaunchedEffect
 
@@ -140,24 +127,15 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
             email = firestoreEmail
         }
 
-        val firestoreUsername = userData?.username ?: ""
-        if (firestoreUsername.isNotEmpty()) {
-            username = firestoreUsername
-        }
-
         val firestorePhoto = userData?.profileImageUrl ?: ""
         if (firestorePhoto.isNotEmpty()) {
             photoUrl = firestorePhoto
         }
     }
 
-
-
-    // Navega de volta se o salvamento foi bem sucedido
-    LaunchedEffect(Sucess) {
-        if (Sucess) {
-            Toast.makeText(context, updatedProfileMsg , Toast.LENGTH_SHORT).show()
-            // Reset state to current values after success to hide the button
+    LaunchedEffect(success) {
+        if (success) {
+            Toast.makeText(context, updatedProfileMsg, Toast.LENGTH_SHORT).show()
             viewModel.resetSaveSuccess()
         }
     }
@@ -171,13 +149,12 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
                     containerColor = colorScheme.surface
                 ),
                 navigationIcon = {
-                    IconButton(onClick = {navController.popBackStack()}) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
-                }
-                ,actions = {
-                    IconButton(onClick = {performLogout()}
-                    ) {
+                },
+                actions = {
+                    IconButton(onClick = { performLogout() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Logout,
                             contentDescription = stringResource(R.string.Logout),
@@ -196,13 +173,13 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
             ) {
                 ExtendedFloatingActionButton(
                     onClick = {
-                       viewModel.updateProfile(name, email, username, photoUrl)
+                        viewModel.updateProfile(name, email, photoUrl)
                     },
-                    icon = { 
+                    icon = {
                         if (isSaving) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = colorScheme.onPrimary, strokeWidth = 2.dp)
                         } else {
-                            Icon(Icons.Default.Save, null) 
+                            Icon(Icons.Default.Save, null)
                         }
                     },
                     text = { Text(if (isSaving) "Saving..." else stringResource(R.string.profile_save_button)) },
@@ -221,7 +198,6 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Seção da Foto
             Box(contentAlignment = Alignment.BottomEnd) {
                 if (photoUrl.isNotEmpty()) {
                     AsyncImage(
@@ -263,7 +239,6 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
                         Icon(Icons.Default.CameraAlt, null, tint = colorScheme.onPrimary, modifier = Modifier.size(20.dp))
                     }
                 } else {
-                    // Badge do Google
                     Surface(
                         color = Color.White,
                         shape = CircleShape,
@@ -294,11 +269,10 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Campo Nome
             OutlinedTextField(
                 value = name,
-                onValueChange = { 
-                    name = it 
+                onValueChange = {
+                    name = it
                     userModifiedName = true
                 },
                 label = { Text(stringResource(R.string.profile_name_label)) },
@@ -314,7 +288,6 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
                 leadingIcon = { Icon(Icons.Default.Person, null) }
             )
 
-            // Campo Email (Bloqueado se Google)
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
