@@ -5,5 +5,6 @@ data class User(
     val fullName: String = "",
     val email: String = "",
     val profileImageUrl: String = "",
+    val organizationId: Int? = null,
     val createAt: Long = System.currentTimeMillis()
 )

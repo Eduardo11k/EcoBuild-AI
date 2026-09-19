@@ -52,6 +52,14 @@ class UserRepository {
         }
     }
 
+    suspend fun updateOrganization(uid: String, orgId: Int) {
+        try {
+            usersCollection.document(uid).update("organizationId", orgId).await()
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Error updating organizationId: ${e.message}", e)
+        }
+    }
+
     suspend fun updateProfile(uid: String, fullName: String, email: String, profileImageUrl: String = "") {
         try {
             val updates = mutableMapOf<String, Any>(

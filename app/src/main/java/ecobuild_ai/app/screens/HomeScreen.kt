@@ -29,7 +29,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
-import ecobuild_ai.app.R
 import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.model.AnalysisItem
 import ecobuild_ai.app.model.sampleRecentAnalyses
@@ -48,7 +47,7 @@ fun HomeScreen(navController: NavController) {
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
 
-    // Redirect to login if no user
+    // Redirect to log in if no user
     LaunchedEffect(currentUser) {
         if (currentUser == null) {
             navController.navigate(Routes.Login) {
@@ -65,6 +64,8 @@ fun HomeScreen(navController: NavController) {
     }
 
     if (currentUser == null) return
+
+    var showAllAnalyses by remember { mutableStateOf(false) }
 
     // Display name: Firestore > Auth displayName > email prefix > "User"
     val firstName = (userData?.fullName?.ifEmpty { null }
@@ -87,14 +88,15 @@ fun HomeScreen(navController: NavController) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp)
         ) {
-            // ── HEADER ───────────────────────────────────────────────────────
+            // ... (rest of Header, Greeting, Featured Card remain the same)
+            
+            // Re-adding the Header for visual context to ensure replacement works
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // App logo badge
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -123,7 +125,6 @@ fun HomeScreen(navController: NavController) {
                     )
                 }
 
-                // Notification button
                 Surface(
                     shape = CircleShape,
                     color = cs.surfaceVariant,
@@ -142,7 +143,6 @@ fun HomeScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── GREETING ─────────────────────────────────────────────────────
             Text(
                 text = "Hello, $firstName 👋",
                 style = MaterialTheme.typography.headlineMedium,
@@ -157,7 +157,6 @@ fun HomeScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // ── FEATURED CARD ─────────────────────────────────────────────────
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -169,7 +168,6 @@ fun HomeScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Icon badge
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
@@ -185,7 +183,6 @@ fun HomeScreen(navController: NavController) {
                             )
                         }
 
-                        // AI Badge
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -256,17 +253,21 @@ fun HomeScreen(navController: NavController) {
                     color = cs.onBackground
                 )
                 Text(
-                    text = "See all",
+                    text = if (showAllAnalyses) "See less" else "See all",
                     style = MaterialTheme.typography.bodySmall,
                     color = EcoGreen,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { /* See All */ }
+                    modifier = Modifier.clickable { 
+                        showAllAnalyses = !showAllAnalyses
+                    }
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            sampleRecentAnalyses.take(3).forEach { item ->
+            val analysesToDisplay = if (showAllAnalyses) sampleRecentAnalyses else sampleRecentAnalyses.take(3)
+
+            analysesToDisplay.forEach { item ->
                 RecentAnalysisCard(item)
                 Spacer(modifier = Modifier.height(12.dp))
             }

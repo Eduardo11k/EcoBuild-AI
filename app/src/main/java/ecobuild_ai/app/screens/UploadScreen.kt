@@ -53,6 +53,11 @@ import ecobuild_ai.app.viewmodel.UploadViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.FileOutputStream
+import ecobuild_ai.app.data.remote.NetworkModule
 
 /**
  * Modificador para criar bordas tracejadas (dashed border) em componentes Compose.
@@ -148,6 +153,13 @@ fun UploadScreen(navController: NavController, viewModel: UploadViewModel) {
     var selectedFile by remember { mutableStateOf<SelectedFile?>(viewModel.selectedFile) }
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     var pdfThumbnails by remember { mutableStateOf<Bitmap?>(viewModel.pdfThumbnail) }
+
+    // Proactively check organization if it's missing
+    LaunchedEffect(Unit) {
+        if (viewModel.organizationId == null) {
+            viewModel.refreshOrganization()
+        }
+    }
 
     // Sync back to ViewModel when state changes
     LaunchedEffect(selectedFile) {
@@ -411,33 +423,73 @@ fun UploadScreen(navController: NavController, viewModel: UploadViewModel) {
             }
 
             Spacer(modifier = Modifier.height(20.dp))
+            val isUploading = remember { mutableStateOf(false) }
+
             OutlinedButton(
                 onClick = {
-                    navController.navigate(Routes.Analysis) {
-                        popUpTo(Routes.Upload) { inclusive = true }
+                    val file = selectedFile
+                    val orgId = viewModel.organizationId
+                    if (file != null && orgId != null) {
+                        isUploading.value = true
+                        coroutine.launch {
+                            try {
+                                val inputStream = context.contentResolver.openInputStream(file.uri)
+                                val tempFile = File(context.cacheDir, file.name)
+                                val outputStream = FileOutputStream(tempFile)
+                                inputStream?.copyTo(outputStream)
+                                outputStream.close()
+                                inputStream?.close()
+
+                                val requestFile = tempFile.asRequestBody(context.contentResolver.getType(file.uri)?.toMediaTypeOrNull())
+                                val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+
+                                // 2. Faz o Upload (Enviando orgId tanto no Path como na Query para evitar o 422)
+                                val planResponse = NetworkModule.apiService.uploadPlan(orgId, orgId, body)
+                                viewModel.lastUploadedPlanId = planResponse.id
+                                NetworkModule.apiService.createAnalysis(ecobuild_ai.app.data.remote.AnalysisCreateRequest(plan_id = planResponse.id))
+
+                                navController.navigate(Routes.Analysis) {
+                                    popUpTo(Routes.Upload) { inclusive = true }
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "API Error: ${e.message}", Toast.LENGTH_LONG).show()
+                                Log.e("UploadAPI", "Error: ${e.message}", e)
+                            } finally {
+                                isUploading.value = false
+                            }
+                        }
+                    } else if (orgId == null) {
+                        Toast.makeText(context, "Organization not ready. Trying to reconnect...", Toast.LENGTH_SHORT).show()
+                        viewModel.refreshOrganization()
                     }
                 },
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = colorScheme.primaryContainer,
-                    contentColor = colorScheme.primary,
-                    disabledContainerColor = colorScheme.primaryContainer,
-                    disabledContentColor = colorScheme.primary
+                    contentColor = colorScheme.primary
                 ),
-                enabled = (selectedFile != null),
+                enabled = (selectedFile != null && !isUploading.value),
                 border = BorderStroke(width = 1.dp, color = BorderLight),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(18.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.FlashOn,
-                    contentDescription = null,
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Start Analysis", color = colorScheme.primary)
+                if (isUploading.value || viewModel.isCheckingOrg) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = colorScheme.primary, strokeWidth = 2.dp)
+                    if (viewModel.isCheckingOrg) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Preparing...", color = colorScheme.primary, fontSize = 12.sp)
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.FlashOn,
+                        contentDescription = null,
+                        tint = colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Start Analysis", color = colorScheme.primary)
+                }
             }
         }
     }

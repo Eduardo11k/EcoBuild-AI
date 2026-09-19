@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,10 +39,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import ecobuild_ai.app.R
 import ecobuild_ai.app.constant.Routes
-import ecobuild_ai.app.model.User
 import ecobuild_ai.app.navigation.BottomNavBar
 import ecobuild_ai.app.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -210,6 +212,7 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
                         contentScale = ContentScale.Crop
                     )
                 } else {
+                    val r = Random.nextInt(3)
                     Box(
                         modifier = Modifier
                             .size(120.dp)
@@ -217,11 +220,10 @@ fun ProfileScreen(navController: NavController, viewModel: ProfileViewModel) {
                             .background(colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
+                        Image(
+                             painter = if (r == 0) painterResource(R.drawable.img_profile_women) else if (r == 1) painterResource(R.drawable.img_profile_blackmen) else painterResource(R.drawable.img_profile_whitemen),
                             contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = colorScheme.onSurfaceVariant
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
