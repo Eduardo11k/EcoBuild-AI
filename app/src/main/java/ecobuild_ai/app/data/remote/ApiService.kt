@@ -36,23 +36,29 @@ data class AnalysisResponse(
     val status: String, // "pending", "processing", "ready", "failed"
     val created_at: String,
     val material_list: MaterialListResponse? = null,
-    // Extended fields — nullable until backend always returns them
+    val parent_analysis_id: String? = null,
+    // Fields expected from backend (nullable until confirmed)
     val project_name: String? = null,
     val plan_type: String? = null,
     val total_area: Double? = null,
     val rooms: Int? = null,
     val sustainability_score: Int? = null,
-    val estimated_cost: Double? = null,
-    val co2_estimated: Double? = null,
-    val co2_rating: String? = null,       // e.g. "Low", "Medium", "High"
+    val co2_rating: String? = null,   // e.g. "Low", "Medium", "High"
     val sustain_notes: String? = null
-)
+) {
+    // Convenience accessors — read from material_list where the API actually stores them
+    val estimated_cost: Double? get() = material_list?.total_cost
+    val co2_estimated: Double? get() = material_list?.co2_saved
+}
 
 @Serializable
 data class MaterialListResponse(
     val id: String,
     val materials: List<MaterialItemResponse> = emptyList(),
-    val notes: String? = null
+    val notes: String? = null,
+    val waste_percentage: Double? = null, // % de desperdício estimado
+    val total_cost: Double? = null,       // custo total — API retorna aqui, não na raiz
+    val co2_saved: Double? = null         // CO₂ poupado/estimado — API retorna aqui
 )
 
 @Serializable
@@ -64,6 +70,7 @@ data class MaterialItemResponse(
     val cost_per_unit: Double? = null,
     val eco_rating: String? = null        // e.g. "A", "B", "C"
 )
+
 
 @Serializable
 data class AnalysisCreateRequest(

@@ -65,6 +65,7 @@ fun AnalysisScreen(
     val isChecked by viewModel.isCheckedNotify.collectAsStateWithLifecycle()
     val uiState   = viewModel.uiState
     val context   = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -101,12 +102,12 @@ fun AnalysisScreen(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = colorScheme.surface
                 )
             )
         }
@@ -226,13 +227,14 @@ private fun AnalysisResultContent(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Overview", "Materials", "Cost", "Sustain")
+    val colorScheme = MaterialTheme.colorScheme
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         ProjectHeaderCard(analysis)
 
-        ScrollableTabRow(
+        PrimaryScrollableTabRow(
             selectedTabIndex = selectedTab,
-            containerColor   = MaterialTheme.colorScheme.surface,
+            containerColor   = colorScheme.surface,
             contentColor     = GreenPrimary,
             edgePadding      = 16.dp
         ) {
@@ -376,9 +378,19 @@ private fun OverviewTab(
         )
     }
 
-    if (analysis.co2_estimated != null) {
+    val co2 = analysis.co2_estimated
+    if (co2 != null) {
         Spacer(Modifier.height(12.dp))
-        Co2Card(co2 = analysis.co2_estimated, rating = analysis.co2_rating)
+        Co2Card(co2 = co2, rating = analysis.co2_rating)
+    }
+
+    if (analysis.material_list?.waste_percentage != null) {
+        Spacer(Modifier.height(12.dp))
+        MetricCard(
+            modifier = Modifier.fillMaxWidth(),
+            value = "${analysis.material_list.waste_percentage}%",
+            label = "Estimated Waste Percentage"
+        )
     }
 
     Spacer(Modifier.height(20.dp))
@@ -536,8 +548,9 @@ private fun SustainTab(analysis: AnalysisResponse) {
                 Spacer(Modifier.height(16.dp))
             }
 
-            if (analysis.co2_estimated != null) {
-                Co2Card(co2 = analysis.co2_estimated, rating = analysis.co2_rating)
+            val co2 = analysis.co2_estimated
+            if (co2 != null) {
+                Co2Card(co2 = co2, rating = analysis.co2_rating)
                 Spacer(Modifier.height(16.dp))
             }
 
