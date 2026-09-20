@@ -40,8 +40,6 @@ data class AnalysisResponse(
     // Fields expected from backend (nullable until confirmed)
     val project_name: String? = null,
     val plan_type: String? = null,
-    val total_area: Double? = null,
-    val rooms: Int? = null,
     val sustainability_score: Int? = null,
     val co2_rating: String? = null,   // e.g. "Low", "Medium", "High"
     val sustain_notes: String? = null
