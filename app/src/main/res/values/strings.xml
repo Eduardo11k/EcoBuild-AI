@@ -54,13 +54,17 @@
     <string name="home_score_format">Score: %1$d%%</string>
     <string name="home_no_analyses">No recent analyses yet. Start analyzing your first plan!</string>
 
-    <!-- Sample Projects -->
-    <string name="sample_project_1_title">Casa Verde - Lote 12</string>
+    <!-- Sample Projects (English) -->
+    <string name="sample_project_1_title">Green House - Lot 12</string>
     <string name="sample_project_1_date">12 May 2024</string>
-    <string name="sample_project_2_title">Villa Solar - Quinta Nova</string>
+    <string name="sample_project_2_title">Solar Villa - New Estate</string>
     <string name="sample_project_2_date">08 May 2024</string>
-    <string name="sample_project_3_title">Eco Loft - Rua das Flores</string>
+    <string name="sample_project_3_title">Eco Loft - Blossom St</string>
     <string name="sample_project_3_date">01 May 2024</string>
+    <string name="sample_project_4_title">Aurora Residence - Block B</string>
+    <string name="sample_project_4_date">24 Apr 2024</string>
+    <string name="sample_project_5_title">Sustainable Sea Building</string>
+    <string name="sample_project_5_date">15 Apr 2024</string>
 
     <!-- Profile Screen -->
     <string name="profile_title">User Profile</string>

@@ -1,5 +1,7 @@
 package ecobuild_ai.app.model
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import ecobuild_ai.app.R
 
 data class AnalysisItem(
@@ -8,44 +10,57 @@ data class AnalysisItem(
     val date: String = "",
     val score: Int = 0,
     val imageUrl: String? = null,
-    val imageRes: Int? = null
+    @DrawableRes val imageRes: Int? = null,
+    @StringRes val titleRes: Int? = null,
+    @StringRes val dateRes: Int? = null
 )
 
-// Sample dynamic data for demo and fallback
+// Sample dynamic data for demo and fallback with English string resources
 val sampleRecentAnalyses = listOf(
     AnalysisItem(
         id = "1",
-        title = "Casa Verde - Lote 12",
+        title = "Green House - Lot 12",
         date = "12 May 2024",
         score = 82,
-        imageRes = R.drawable.counter_eco_img
+        imageRes = R.drawable.counter_eco_img,
+        titleRes = R.string.sample_project_1_title,
+        dateRes = R.string.sample_project_1_date
     ),
     AnalysisItem(
         id = "2",
-        title = "Villa Solar - Quinta Nova",
+        title = "Solar Villa - New Estate",
         date = "08 May 2024",
         score = 91,
-        imageRes = R.drawable.login_img
+        imageRes = R.drawable.login_img,
+        titleRes = R.string.sample_project_2_title,
+        dateRes = R.string.sample_project_2_date
     ),
     AnalysisItem(
         id = "3",
-        title = "Eco Loft - Rua das Flores",
+        title = "Eco Loft - Blossom St",
         date = "01 May 2024",
         score = 76,
-        imageRes = R.drawable.register_img
+        imageRes = R.drawable.register_img,
+        titleRes = R.string.sample_project_3_title,
+        dateRes = R.string.sample_project_3_date
     ),
     AnalysisItem(
         id = "4",
-        title = "Residência Aurora - Bloco B",
+        title = "Aurora Residence - Block B",
         date = "24 Apr 2024",
         score = 88,
-        imageRes = R.drawable.counter_eco_img
+        imageRes = R.drawable.counter_eco_img,
+        titleRes = R.string.sample_project_4_title,
+        dateRes = R.string.sample_project_4_date
     ),
     AnalysisItem(
         id = "5",
-        title = "Edifício Sustentável Mar",
+        title = "Sustainable Sea Building",
         date = "15 Apr 2024",
         score = 95,
-        imageRes = R.drawable.logoapp_img
+        imageRes = R.drawable.logoapp_img,
+        titleRes = R.string.sample_project_5_title,
+        dateRes = R.string.sample_project_5_date
     )
 )
+

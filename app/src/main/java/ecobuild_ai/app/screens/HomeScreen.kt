@@ -23,12 +23,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
+import ecobuild_ai.app.R
 import ecobuild_ai.app.constant.Routes
 import ecobuild_ai.app.model.AnalysisItem
 import ecobuild_ai.app.model.sampleRecentAnalyses
@@ -88,9 +90,6 @@ fun HomeScreen(navController: NavController) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp)
         ) {
-            // ... (rest of Header, Greeting, Featured Card remain the same)
-            
-            // Re-adding the Header for visual context to ensure replacement works
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -115,10 +114,10 @@ fun HomeScreen(navController: NavController) {
                     Text(
                         text = buildAnnotatedString {
                             withStyle(SpanStyle(color = EcoGreen, fontWeight = FontWeight.Bold)) {
-                                append("EcoBuild")
+                                append(stringResource(R.string.app_name_prefix))
                             }
                             withStyle(SpanStyle(color = cs.onSurfaceVariant, fontWeight = FontWeight.Bold)) {
-                                append("-AI")
+                                append(stringResource(R.string.app_name_suffix))
                             }
                         },
                         style = MaterialTheme.typography.titleLarge
@@ -134,7 +133,7 @@ fun HomeScreen(navController: NavController) {
                     IconButton(onClick = { /* Notifications */ }) {
                         Icon(
                             imageVector = Icons.Outlined.Notifications,
-                            contentDescription = "Notifications",
+                            contentDescription = stringResource(R.string.home_notifications),
                             tint = cs.onSurfaceVariant
                         )
                     }
@@ -144,13 +143,13 @@ fun HomeScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Hello, $firstName 👋",
+                text = stringResource(R.string.home_greeting_format, firstName),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = cs.onBackground
             )
             Text(
-                text = "Ready to build sustainably today?",
+                text = stringResource(R.string.home_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = cs.onSurfaceVariant
             )
@@ -198,7 +197,7 @@ fun HomeScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                "AI",
+                                stringResource(R.string.home_cta_ai_badge),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = cs.onSecondaryContainer,
                                 fontWeight = FontWeight.Bold
@@ -209,13 +208,13 @@ fun HomeScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        text = "Analyse a new plan",
+                        text = stringResource(R.string.home_cta_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = cs.onSurface
                     )
                     Text(
-                        text = "Upload your plan and get a sustainability score in seconds.",
+                        text = stringResource(R.string.home_cta_description),
                         style = MaterialTheme.typography.bodyMedium,
                         color = cs.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
@@ -233,7 +232,7 @@ fun HomeScreen(navController: NavController) {
                     ) {
                         Icon(Icons.Default.FlashOn, null, tint = Color.White)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Start Analysis", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                        Text(stringResource(R.string.home_cta_button), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                     }
                 }
             }
@@ -247,13 +246,13 @@ fun HomeScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Recent Analyses",
+                    text = stringResource(R.string.home_recent_analyses_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = cs.onBackground
                 )
                 Text(
-                    text = if (showAllAnalyses) "See less" else "See all",
+                    text = if (showAllAnalyses) stringResource(R.string.home_see_less) else stringResource(R.string.home_see_all),
                     style = MaterialTheme.typography.bodySmall,
                     color = EcoGreen,
                     fontWeight = FontWeight.Bold,
@@ -307,8 +306,11 @@ fun RecentAnalysisCard(item: AnalysisItem) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
+                val titleText = if (item.titleRes != null) stringResource(item.titleRes) else item.title
+                val dateText = if (item.dateRes != null) stringResource(item.dateRes) else item.date
+
                 Text(
-                    item.title,
+                    text = titleText,
                     fontWeight = FontWeight.Bold,
                     color = cs.onSurface,           // ← era TextPrimary (fixo escuro)
                     fontSize = 14.sp
@@ -325,7 +327,7 @@ fun RecentAnalysisCard(item: AnalysisItem) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        item.date,
+                        text = dateText,
                         style = MaterialTheme.typography.bodySmall,
                         color = cs.onSurfaceVariant  // ← era TextSecondary (fixo cinza)
                     )
@@ -349,7 +351,7 @@ fun RecentAnalysisCard(item: AnalysisItem) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        "Score: ${item.score}%",
+                        text = stringResource(R.string.home_score_format, item.score),
                         style = MaterialTheme.typography.labelSmall,
                         color = cs.onPrimaryContainer,
                         fontWeight = FontWeight.Bold
